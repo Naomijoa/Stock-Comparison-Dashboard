@@ -290,34 +290,116 @@ st.plotly_chart(fig_normalized, use_container_width=True)
 # KEY FINDINGS AND EXPLANATION
 # ==========================================
 
+
+# ==========================================
+# KEY FINDINGS AND ANALYSIS
+# ==========================================
+
+
+# ==========================================
+# KEY FINDINGS AND ANALYSIS
+# ==========================================
+
 st.divider()
 st.header("Key Findings and Analysis")
 
-st.write("""
-This dashboard compares Apple, Microsoft, and NVIDIA
-using historical stock market data.
+st.write(
+    "This dashboard compares the selected companies "
+    "using historical stock market data."
+)
 
-1. **Stock Price Comparison:** Shows differences in
-   adjusted closing stock prices over time.
+if not filtered_data.empty:
+    analysis = filtered_data.sort_values(
+        ["Company", "Date"]
+    ).copy()
 
-2. **Trading Volume:** Compares daily trading activity
-   among the three companies.
+    # Calculate daily returns
+    analysis["Daily Return (%)"] = (
+        analysis.groupby("Company")["Close"]
+        .pct_change() * 100
+    )
 
-3. **Daily Returns Distribution:** Shows how frequently
-   positive and negative daily returns occur.
+    # Calculate overall stock performance
+    performance = analysis.groupby("Company")["Close"].agg(
+        ["first", "last"]
+    )
 
-4. **Volatility Comparison:** Highlights differences
-   in daily return variability and potential outliers.
+    performance["Return (%)"] = (
+        (performance["last"] / performance["first"] - 1)
+        * 100
+    )
 
-5. **Normalized Performance:** Compares percentage-based
-   performance from a common starting value of 100,
-   making relative growth easier to evaluate.
+    best_stock = performance["Return (%)"].idxmax()
+    best_return = performance.loc[
+        best_stock, "Return (%)"
+    ]
 
-The company and date filters allow users to explore
-different periods and compare selected companies.
-""")
+    st.subheader("1. Stock Price Comparison")
+    st.write(
+        f"**{best_stock}** had the highest percentage "
+        f"return during the selected period, "
+        f"with a return of **{best_return:.2f}%**."
+    )
+
+    st.subheader("2. Trading Volume")
+    st.write(
+        "Trading volume compares daily market activity "
+        "among the selected companies and helps identify "
+        "differences in investor trading activity."
+    )
+
+    st.subheader("3. Daily Returns Distribution")
+    st.write(
+        "The daily returns distribution shows how "
+        "frequently positive and negative returns occur "
+        "for each company."
+    )
+
+    st.subheader("4. Volatility Comparison")
+
+    volatility = (
+        analysis.groupby("Company")["Daily Return (%)"]
+        .std()
+        .dropna()
+    )
+
+    if not volatility.empty:
+        most_volatile = volatility.idxmax()
+        highest_volatility = volatility.max()
+
+        st.write(
+            f"**{most_volatile}** experienced the "
+            f"highest daily return volatility, "
+            f"with a standard deviation of "
+            f"**{highest_volatility:.2f} "
+            f"percentage points**."
+        )
+    else:
+        st.write(
+            "More trading days are needed "
+            "to calculate volatility."
+        )
+
+    st.subheader("5. Normalized Stock Performance")
+    st.write(
+        "Normalized performance compares stocks "
+        "from a common starting value of 100, "
+        "making relative growth easier to evaluate."
+    )
+
+    st.info(
+        "The findings automatically update when "
+        "the selected companies or date range changes."
+    )
+
+else:
+    st.warning(
+        "No stock data is available for "
+        "the selected filters."
+    )
 
 st.caption(
     "Data source: Yahoo Finance via yfinance. "
-    "Historical prices are adjusted for corporate actions."
+    "Historical prices may be adjusted "
+    "for corporate actions."
 )
